@@ -15,7 +15,9 @@ public class Cv {
     @CollectionTable(name = "cv_tech_stack", joinColumns = @JoinColumn(name = "cv_id"))
     @Column(name = "technology")
     List<String> techStack = new ArrayList<>();
+    @Column(columnDefinition = "TEXT")
     String profile;
+    @Column(columnDefinition = "TEXT")
     String education;
     @ManyToOne(fetch = FetchType.LAZY)
     SkillMatrix skillMatrix;

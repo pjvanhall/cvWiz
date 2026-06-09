@@ -1,9 +1,8 @@
 package nl.codeclan.cvwiz.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
+import org.hibernate.annotations.Fetch;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 import java.util.UUID;

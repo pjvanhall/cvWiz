@@ -1,6 +1,7 @@
 package nl.codeclan.cvwiz.service;
 
 
+import jakarta.annotation.Nullable;
 import nl.codeclan.cvwiz.dto.CurriculumVitaeDto;
 import nl.codeclan.cvwiz.dto.ErvaringDto;
 import nl.codeclan.cvwiz.dto.MedewerkerDto;
@@ -29,9 +30,13 @@ public class CvService {
     }
 
 
-    public CurriculumVitaeDto createCVForNewConsultant(CurriculumVitaeDto dto) throws FileNotFoundException {
+    public CurriculumVitaeDto createCVForNewConsultant(@Nullable CurriculumVitaeDto dto) throws FileNotFoundException {
         List<ErvaringDto> ervaringDtos = new ArrayList<>();
         ervaringDtos.add(expSer.createExperience(null));
+        CurriculumVitaeDto newDto = new CurriculumVitaeDto();
+        if(dto == null) {
+            dto = newDto;
+        }
         dto.setErvaring(ervaringDtos);
         dto.setMatrix(skms.createNewSkillMatrixOfBaseMatrix());
         dto.setId(repo.count()+1);

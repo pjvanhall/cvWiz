@@ -1,7 +1,9 @@
 package nl.codeclan.cvwiz.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 
 @Entity
 public class Experience {
@@ -12,8 +14,11 @@ public class Experience {
     String period;
     String jobTitle;
     String branche;
+    @Column(columnDefinition = "TEXT")
     String techStack;
+    @Column(columnDefinition = "TEXT")
     String situation;
+    @Column(columnDefinition = "TEXT")
     String task;
 
     public Experience() {
