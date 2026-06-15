@@ -1,102 +1,131 @@
 package nl.codeclan.cvwiz.controller;
 
-
-import nl.codeclan.cvwiz.dto.BeheerderDto;
-import nl.codeclan.cvwiz.dto.CurriculumVitaeDto;
-import nl.codeclan.cvwiz.dto.MedewerkerDto;
-import nl.codeclan.cvwiz.dto.TechniekMatrixDto;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import nl.codeclan.cvwiz.dto.*;
 import nl.codeclan.cvwiz.service.ConsultantService;
 import nl.codeclan.cvwiz.service.CvService;
 import nl.codeclan.cvwiz.service.ManagerService;
 import nl.codeclan.cvwiz.service.SkillMatrixService;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.FileNotFoundException;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/beheerders")
+// @PreAuthorize("hasAuthority('ROLE_MANAGER')")
+@Validated
 public class ManagerController {
 
-    private final ManagerService manSer;
-    private final SkillMatrixService skiMatSer;
-    private final CvService cvSer;
+    private final ManagerService managerService;
+    private final SkillMatrixService skillMatrixService;
+    private final CvService cvService;
     private final ConsultantService consultantService;
 
-    public ManagerController(ManagerService manSer, SkillMatrixService skiMatSer, CvService cvSer, ConsultantService consultantService) {
-        this.manSer = manSer;
-        this.skiMatSer = skiMatSer;
-        this.cvSer = cvSer;
+    public ManagerController(
+            ManagerService managerService,
+            SkillMatrixService skillMatrixService,
+            CvService cvService,
+            ConsultantService consultantService
+    ) {
+        this.managerService = managerService;
+        this.skillMatrixService = skillMatrixService;
+        this.cvService = cvService;
         this.consultantService = consultantService;
     }
 
     @GetMapping("/beheerder")
-    public BeheerderDto getBeheerderDto(@RequestParam UUID id) throws FileNotFoundException {
-        return manSer.getManager(id);
+    public BeheerderDto getManager(@RequestParam UUID id) throws FileNotFoundException {
+        return managerService.getManager(id);
     }
 
     @PostMapping("/nieuw")
-    public BeheerderDto createBeheerderDto(@RequestBody BeheerderDto dto) {
-        return manSer.createNewManager(dto);
+    public BeheerderDto createManager(@Valid @RequestBody BeheerderDto dto) {
+        return managerService.createNewManager(dto);
     }
 
     @PostMapping("/bewerk")
-    public BeheerderDto updateBeheerderDto(@RequestBody BeheerderDto dto) {
-        return manSer.updateManager(dto);
+    public BeheerderDto updateManager(@Valid @RequestBody BeheerderDto dto) {
+        return managerService.updateManager(dto);
     }
 
     @DeleteMapping("/verwijder")
-    public void deleteBeheerderDto(@RequestParam UUID id) throws FileNotFoundException {
-        manSer.deleteManager(id);
+    public void deleteManager(@RequestParam UUID id) throws FileNotFoundException {
+        managerService.deleteManager(id);
     }
 
     @PostMapping("/nieuweMedewerker")
-    public MedewerkerDto createMedewerkerDto(@RequestBody MedewerkerDto dto) throws FileNotFoundException {
-        return manSer.createNewConsultant(dto);
+    public MedewerkerOnboardingResponseDto createConsultant(@Valid @RequestBody MedewerkerDto dto) {
+        return managerService.createNewConsultant(dto);
     }
 
     @PostMapping("/updateMedewerker")
-    public MedewerkerDto updateMedewerkerDto(@RequestBody MedewerkerDto dto) throws FileNotFoundException {
-        return manSer.updateConsultant(dto);
+    public MedewerkerDto updateConsultant(@Valid @RequestBody MedewerkerDto dto) throws FileNotFoundException {
+        return managerService.updateConsultant(dto);
     }
 
     @PostMapping("/nieuweCurriculumVitae")
-    public MedewerkerDto nieuweCurriculumVitaeDto(@RequestParam String id, @RequestBody CurriculumVitaeDto cv) {
-        return manSer.addNewCvToConsultantCvList(id, cv);
+    public MedewerkerDto addCurriculumVitaeToConsultant(
+            @RequestParam String id,
+            @Valid @RequestBody CurriculumVitaeDto cv
+    ) throws FileNotFoundException {
+        return managerService.addNewCvToConsultantCvList(id, cv);
     }
 
     @DeleteMapping("/deleteMedewerker")
-    public void deleteMedewerkerDto(@RequestParam String firstname, @RequestParam String lastname) throws FileNotFoundException {
-        manSer.deleteConsultant(firstname, lastname);
+    public void deleteConsultant(
+            @RequestParam @NotBlank @Size(max = 100) String voornaam,
+            @RequestParam @NotBlank @Size(max = 100) String achternaam
+    ) throws FileNotFoundException {
+        managerService.deleteConsultant(voornaam, achternaam);
     }
 
-    @PostMapping("/nieweCategory")
-    public String addNewCategory(@RequestParam String category, @RequestParam String techniek) throws FileNotFoundException {
-        return skiMatSer.addNewCategoryToMapCategories(category, techniek);
+    @PostMapping({"/nieuweCategory", "/nieweCategory"})
+    public String addNewCategory(
+            @RequestParam @NotBlank @Size(max = 100) String category,
+            @RequestParam @NotBlank @Size(max = 100) String techniek
+    ) throws FileNotFoundException {
+        return skillMatrixService.addNewCategoryToMapCategories(category, techniek);
     }
 
     @PostMapping("/nieuweTechniek")
-    public String addNewTool(@RequestParam String category, @RequestParam String techniek) throws FileNotFoundException {
-        return skiMatSer.addNewToolToMapCategories(category, techniek);
+    public String addNewTool(
+            @RequestParam @NotBlank @Size(max = 100) String category,
+            @RequestParam @NotBlank @Size(max = 100) String techniek
+    ) throws FileNotFoundException {
+        return skillMatrixService.addNewToolToMapCategories(category, techniek);
     }
 
     @GetMapping("/matrix")
-    public TechniekMatrixDto getTechniekMatrixDto(@RequestParam Long id) throws FileNotFoundException {
-        return skiMatSer.getSkillMatrix(id);
+    public TechniekMatrixDto getSkillMatrix(@RequestParam Long id) throws FileNotFoundException {
+        return skillMatrixService.getSkillMatrix(id);
     }
 
     @GetMapping("/curriculumVitae")
-    public CurriculumVitaeDto getCurriculumViteaDto(@RequestParam Long id) throws FileNotFoundException {
-        return cvSer.getCvById(id);
+    public CurriculumVitaeDto getCurriculumVitae(@RequestParam Long id) throws FileNotFoundException {
+        return cvService.getCvById(id);
     }
 
     @PostMapping("/curriculumVitae/update")
-    public CurriculumVitaeDto updateCurriculumViteaDto(@RequestBody CurriculumVitaeDto dto) throws FileNotFoundException {
-        return cvSer.updateCV(dto);
+    public CurriculumVitaeDto updateCurriculumVitae(@Valid @RequestBody CurriculumVitaeDto dto) throws FileNotFoundException {
+        return cvService.updateCV(dto);
     }
 
     @PostMapping("/curriculumVitae/update/originale")
-    public CurriculumVitaeDto updateOiginalCurriculumViteaDto(@RequestParam String voornaam, @RequestParam String achternaam, @RequestBody CurriculumVitaeDto d) throws FileNotFoundException {
-        return cvSer.updateOriginalCV(consultantService.getConsultantByName(voornaam, achternaam), d);
+    public CurriculumVitaeDto updateOriginalCurriculumVitae(
+            @RequestParam @NotBlank @Size(max = 100) String voornaam,
+            @RequestParam @NotBlank @Size(max = 100) String achternaam,
+            @Valid @RequestBody CurriculumVitaeDto dto
+    ) throws FileNotFoundException {
+        return cvService.updateOriginalCV(consultantService.getConsultantByName(voornaam, achternaam), dto);
+    }
+
+    @GetMapping("/gebruikers")
+    public List<String> getUsers() {
+        return managerService.getUsers();
     }
 }

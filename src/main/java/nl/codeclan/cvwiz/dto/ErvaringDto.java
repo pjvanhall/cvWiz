@@ -1,13 +1,22 @@
 package nl.codeclan.cvwiz.dto;
 
+import jakarta.validation.constraints.Size;
+
 public class ErvaringDto {
     Long id;
+    @Size(max = 255)
     String bedrijf;
+    @Size(max = 100)
     String periode;
+    @Size(max = 255)
     String functie;
+    @Size(max = 255)
     String sector;
+    @Size(max = 20000)
     String kennis;
+    @Size(max = 20000)
     String situatie;
+    @Size(max = 20000)
     String taak;
 
     public ErvaringDto() {
