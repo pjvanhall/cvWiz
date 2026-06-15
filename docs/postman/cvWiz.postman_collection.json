@@ -1,0 +1,483 @@
+{
+  "info": {
+    "_postman_id": "1a45d19d-2b49-4f2a-9be5-c00100000002",
+    "name": "cvWiz API",
+    "description": "Local development examples for the cvWiz Spring Boot API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "managerUsername",
+      "value": "piet.puk@codeclan.nl"
+    },
+    {
+      "key": "managerPassword",
+      "value": "ManagerPassword123!"
+    },
+    {
+      "key": "managerToken",
+      "value": ""
+    },
+    {
+      "key": "managerId",
+      "value": "057e5670-6679-41ae-9999-0b121353d8f4"
+    },
+    {
+      "key": "consultantUsername",
+      "value": ""
+    },
+    {
+      "key": "consultantPassword",
+      "value": ""
+    },
+    {
+      "key": "consultantToken",
+      "value": ""
+    },
+    {
+      "key": "consultantId",
+      "value": ""
+    },
+    {
+      "key": "cvId",
+      "value": "1"
+    },
+    {
+      "key": "completedConsultant",
+      "value": "{}"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login as seeded manager",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/gebruikers/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "gebruikers",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{managerUsername}}\",\n  \"password\": \"{{managerPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login succeeded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('response contains only token', function () {",
+                  "  pm.expect(Object.keys(body)).to.eql(['token']);",
+                  "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('managerToken', body.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as generated consultant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/gebruikers/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "gebruikers",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{consultantUsername}}\",\n  \"password\": \"{{consultantPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('consultant login succeeded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('response contains only token', function () {",
+                  "  pm.expect(Object.keys(body)).to.eql(['token']);",
+                  "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('consultantToken', body.token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Manager",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{managerToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get manager",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/beheerders/beheerder?id={{managerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "beheerders",
+                "beheerder"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{managerId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List users",
+          "description": "Returns user full names as a JSON string array.",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/beheerders/gebruikers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "beheerders",
+                "gebruikers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create consultant onboarding user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/beheerders/nieuweMedewerker",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "beheerders",
+                "nieuweMedewerker"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": null,\n  \"voornaam\": \"Ada\",\n  \"achternaam\": \"Lovelace\",\n  \"telefoon\": \"06-12345678\",\n  \"emailAdres\": \"ada.lovelace@example.com\",\n  \"orgineleCv\": null,\n  \"cvLijst\": []\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('consultant created', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('consultantId', body.consultant.id);",
+                  "pm.collectionVariables.set('consultantUsername', body.username);",
+                  "pm.collectionVariables.set('consultantPassword', body.oneTimePassword);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get skill matrix",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/beheerders/matrix?id=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "beheerders",
+                "matrix"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get CV",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/beheerders/curriculumVitae?id={{cvId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "beheerders",
+                "curriculumVitae"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{cvId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update CV with new matrix and experience",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/beheerders/curriculumVitae/update",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "beheerders",
+                "curriculumVitae",
+                "update"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{cvId}},\n  \"bestandsNaam\": \"cv_ada_lovelace_updated\",\n  \"competenties\": [\n    \"Java\",\n    \"Spring Boot\",\n    \"Candidate's API testing\"\n  ],\n  \"languages\": {\n    \"Dutch\": \"Native\",\n    \"English\": \"Professional\",\n    \"German\": \"Intermediate\"\n  },\n  \"profiel\": \"Candidate's profile updated.\",\n  \"opleiding\": \"Computer Science\",\n  \"matrix\": {\n    \"id\": null,\n    \"matrix\": {\n      \"Testing\": {\n        \"Playwright\": 4\n      }\n    }\n  },\n  \"ervaring\": [\n    {\n      \"id\": null,\n      \"bedrijf\": \"New Company\",\n      \"periode\": \"2026\",\n      \"functie\": \"Tester\",\n      \"sector\": \"IT\",\n      \"kennis\": \"Java\",\n      \"situatie\": \"New situation\",\n      \"taak\": \"New task\"\n    }\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('CV update succeeded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "if (body.id) {",
+                  "  pm.collectionVariables.set('cvId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add skill category",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/beheerders/nieuweCategory?category=Cloud&techniek=Azure",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "beheerders",
+                "nieuweCategory"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Cloud"
+                },
+                {
+                  "key": "techniek",
+                  "value": "Azure"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultant",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{consultantToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get own consultant before CV completion",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/medewerkers/medewerker?id={{consultantId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "medewerkers",
+                "medewerker"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{consultantId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Complete one-time CV",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/medewerkers/curriculumVitae/eersteLogin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "medewerkers",
+                "curriculumVitae",
+                "eersteLogin"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": null,\n  \"bestandsNaam\": \"cv_ada_lovelace\",\n  \"competenties\": [\n    \"Java\",\n    \"Spring Boot\",\n    \"API testing\"\n  ],\n  \"languages\": {\n    \"Dutch\": \"Native\",\n    \"English\": \"Professional\"\n  },\n  \"profiel\": \"Experienced software consultant.\",\n  \"opleiding\": \"Computer Science\",\n  \"matrix\": null,\n  \"ervaring\": []\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('one-time CV completed', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('completedConsultant', JSON.stringify(body));",
+                  "if (body.orgineleCv && body.orgineleCv.id) {",
+                  "  pm.collectionVariables.set('cvId', body.orgineleCv.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update own consultant record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/medewerkers/updateMedewerker",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "medewerkers",
+                "updateMedewerker"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{completedConsultant}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('consultant update succeeded before account is disabled', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
