@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import nl.codeclan.cvwiz.util.InputValidationUtil;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -26,7 +27,6 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
 import java.util.Map;
 
 @ControllerAdvice
@@ -54,11 +54,13 @@ public class InputSanitizationAdvice extends RequestBodyAdviceAdapter {
     }
 
     @Override
+    @NullMarked
     public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         return true;
     }
 
     @Override
+    @NullMarked
     public HttpInputMessage beforeBodyRead(HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) throws IOException {
         Charset charset = getCharset(inputMessage.getHeaders());
         String body = new String(StreamUtils.copyToByteArray(inputMessage.getBody()), charset);
@@ -99,9 +101,7 @@ public class InputSanitizationAdvice extends RequestBodyAdviceAdapter {
         }
         if (node.isObject()) {
             ObjectNode sanitizedObject = objectMapper.createObjectNode();
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
+            for (Map.Entry<String, JsonNode> entry : node.properties()) {
                 String sanitizedFieldName = shouldSkipField(entry.getKey()) ? entry.getKey() : InputValidationUtil.sanitize(entry.getKey());
                 sanitizedObject.set(sanitizedFieldName, sanitizeJsonNode(entry.getValue(), entry.getKey()));
             }
@@ -136,11 +136,13 @@ public class InputSanitizationAdvice extends RequestBodyAdviceAdapter {
 
     private record SanitizedHttpInputMessage(HttpHeaders headers, byte[] body) implements HttpInputMessage {
         @Override
+        @NullMarked
         public InputStream getBody() {
             return new ByteArrayInputStream(body);
         }
 
         @Override
+        @NullMarked
         public HttpHeaders getHeaders() {
             return headers;
         }

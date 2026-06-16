@@ -16,6 +16,13 @@ import java.io.FileNotFoundException;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
+    private ResponseEntity<ApiError> error(HttpStatus status, String message) {
+        return ResponseEntity.status(status).body(new ApiError(status.value(), status.getReasonPhrase(), message));
+    }
+
+    public record ApiError(int status, String error, String message) {
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
         return error(HttpStatus.BAD_REQUEST, "Request validation failed.");
@@ -63,10 +70,4 @@ public class ApiExceptionHandler {
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error.");
     }
 
-    private ResponseEntity<ApiError> error(HttpStatus status, String message) {
-        return ResponseEntity.status(status).body(new ApiError(status.value(), status.getReasonPhrase(), message));
-    }
-
-    private record ApiError(int status, String error, String message) {
-    }
 }
