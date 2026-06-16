@@ -17,6 +17,6 @@ public class ManagerMapper {
     }
 
     public static BeheerderDto managerToManagerDto(Manager m) {
-        return new BeheerderDto(m.getFirstname(), m.getManagerId().toString(), m.getLastname(), m.getEmail(), m.getTelephone());
+        return new BeheerderDto(m.getFirstname(), m.getManagerId().toString(), m.getLastname(), m.getTelephone(), m.getEmail());
     }
 }

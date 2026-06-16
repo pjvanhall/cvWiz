@@ -1,312 +1,368 @@
 package nl.codeclan.cvwiz;
 
-
+import nl.codeclan.cvwiz.dto.MedewerkerOnboardingResponseDto;
 import nl.codeclan.cvwiz.dto.CurriculumVitaeDto;
-import nl.codeclan.cvwiz.dto.ErvaringDto;
 import nl.codeclan.cvwiz.dto.MedewerkerDto;
-import nl.codeclan.cvwiz.dto.TechniekMatrixDto;
-import nl.codeclan.cvwiz.mapper.CVMapper;
-import nl.codeclan.cvwiz.mapper.ConsultantMapper;
 import nl.codeclan.cvwiz.model.Consultant;
+import nl.codeclan.cvwiz.model.CustomUser;
 import nl.codeclan.cvwiz.model.Cv;
 import nl.codeclan.cvwiz.model.Experience;
 import nl.codeclan.cvwiz.model.SkillMatrix;
-import nl.codeclan.cvwiz.repository.ConsultantRepository;
+import nl.codeclan.cvwiz.repository.CustomUserRepository;
+import nl.codeclan.cvwiz.repository.CvRepository;
+import nl.codeclan.cvwiz.repository.ExperienceRepository;
+import nl.codeclan.cvwiz.repository.SkillMatrixRepository;
 import nl.codeclan.cvwiz.service.ConsultantService;
+import nl.codeclan.cvwiz.service.CustomUserService;
 import nl.codeclan.cvwiz.service.CvService;
 import nl.codeclan.cvwiz.service.ExperienceService;
 import nl.codeclan.cvwiz.service.SkillMatrixService;
+import nl.codeclan.cvwiz.support.RepositoryDoubles;
+import nl.codeclan.cvwiz.support.TestData;
+import nl.codeclan.cvwiz.support.TestPasswordEncoder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.io.FileNotFoundException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(MockitoExtension.class)
-public class ConsultantServiceTest {
+class ConsultantServiceTest {
 
-    @InjectMocks
+    private RepositoryDoubles.ConsultantTestRepository consultantRepository;
+    private RepositoryDoubles.TestRepository<CvRepository, Cv, Long> cvRepository;
+    private RepositoryDoubles.TestRepository<ExperienceRepository, Experience, Long> experienceRepository;
+    private RepositoryDoubles.TestRepository<SkillMatrixRepository, SkillMatrix, Long> skillMatrixRepository;
+    private RepositoryDoubles.TestRepository<CustomUserRepository, CustomUser, String> userRepository;
     private ConsultantService service;
 
-
-    @Mock
-    ConsultantRepository repo;
-    @Mock
-    CvService cvService;
-    @Mock
-    ExperienceService expSer;
-    @Mock
-    SkillMatrixService skms;
-    @Mock
-    UUID id;
-    @Mock
-    UUID id1;
-    @Mock
-    Consultant consultant;
-    @Mock
-    Cv cv;
-    @Mock
-    SkillMatrix skim;
-    @Mock
-    Experience exp;
-    @Mock
-    List<Experience> expList;
-    @Mock
-    List<Cv> cvList;
-    @Mock
-    Consultant consultant1;
-    @Mock
-    Cv cv1;
-    @Mock
-    SkillMatrix skim1;
-    @Mock
-    List<Experience> expList1;
-    @Mock
-    List<Cv> cvList1;
-    @Mock
-    MedewerkerDto mdw;
-    @Mock
-    CurriculumVitaeDto cvDto;
-    @Mock
-    TechniekMatrixDto skimDto;
-    @Mock
-    ErvaringDto ervDto;
-    @Mock
-    List<ErvaringDto> ervList;
-    @Mock
-    List<CurriculumVitaeDto> cvDtoList;
-    @Mock
-    MedewerkerDto mdw1;
-    @Mock
-    CurriculumVitaeDto cvDto1;
-    @Mock
-    TechniekMatrixDto skimDto1;
-    @Mock
-    ErvaringDto ervDto1;
-    @Mock
-    List<ErvaringDto> ervList1;
-    @Mock
-    List<CurriculumVitaeDto> cvDtoList1;
-    @Mock
-    MedewerkerDto mdw2;
-
     @BeforeEach
-    public void init() {
-        id = UUID.fromString("f8861001-69e5-4a55-bb50-4fb935242684");
-        id1 = UUID.fromString("d5f30ce2-078f-439e-88a9-45ff4bbe1964");
-        List<String> s = List.of("React", "Angular", "Spring Boot", "Java");
-        Map<String, Map<String, Integer>> categories = new HashMap<>();
-        Map<String, Integer> fronTech = new HashMap<>();
-        fronTech.put("NPM", 0);
-        fronTech.put("ngBootstrap", 0);
-        categories.put("Frontend Technologies", fronTech);
-        skim = new SkillMatrix(1L, categories);
-        exp = new Experience(1L, "bedrijf.bv", "30-10-2021 t/m 30-04-2026", "directeur", "branche", "heel veel", "gevaarlijk", "overleven");
-        expList = List.of(exp);
-        cv = new Cv(1L, "Cv van Kees", s, "profiel van Kees", "Opleiding van Kees", skim, expList);
-        cvList = List.of(cv);
-        consultant = new Consultant(id1, "Kees", "van der Plas", "0123-456789", "kees.vd.plas@iets.nl", cv, cvList);
-        skim1 = new SkillMatrix(2L, categories);
-        expList1 = List.of(exp);
-        cv1 = new Cv(2L, "Cv van Kees", s, "profiel van Kees", "Opleiding van Kees", skim1, expList1);
-        cvList1 = List.of(cv1);
-        consultant1 = new Consultant(id, "Kees", "van der Plas", "0123-456789", "kees.vd.plas@iets.nl", cv1, cvList1);
-        skimDto = new TechniekMatrixDto(1L, categories);
-        ervDto = new ErvaringDto(1L, "bedrijf.bv", "30-10-2021 t/m 30-04-2026", "directeur", "branche", "heel veel", "gevaarlijk", "overleven");
-        ervList = List.of(ervDto);
-        cvDto = new CurriculumVitaeDto(1L, "Cv van Kees", s, "profiel van Kees", "Opleiding van Kees", skimDto, ervList);
-        cvDtoList = List.of(cvDto);
-        mdw = new MedewerkerDto("Kees", id1.toString(), "van der Plas", "0123-456789", "kees.vd.plas@iets.nl", cvDto, cvDtoList);
-        skimDto1 = new TechniekMatrixDto(2L, categories);
-        ervDto1 = new ErvaringDto(2L, "bedrijf.bv", "30-10-2021 t/m 30-04-2026", "directeur", "branche", "heel veel", "gevaarlijk", "overleven");
-        ervList1 = List.of(ervDto1);
-        cvDto1 = new CurriculumVitaeDto(2L, "Cv van Kees", s, "profiel van Kees", "Opleiding van Kees", skimDto1, ervList1);
-        cvDtoList1 = List.of(cvDto1);
-        mdw1 = new MedewerkerDto("Kees", id.toString(), "van der Plas", "0123-456789", "kees.vd.plas@iets.nl", cvDto1, cvDtoList1);
+    void setUp() {
+        consultantRepository = RepositoryDoubles.consultants();
+        cvRepository = RepositoryDoubles.cvs();
+        experienceRepository = RepositoryDoubles.experiences();
+        skillMatrixRepository = RepositoryDoubles.skillMatrices();
+        userRepository = RepositoryDoubles.users();
+
+        ExperienceService experienceService = new ExperienceService(experienceRepository.repository());
+        SkillMatrixService skillMatrixService = new SkillMatrixService(skillMatrixRepository.repository());
+        CvService cvService = new CvService(cvRepository.repository(), experienceService, skillMatrixService);
+        CustomUserService customUserService = new CustomUserService(userRepository.repository(), new TestPasswordEncoder());
+        service = new ConsultantService(consultantRepository.repository(), cvService, customUserService);
     }
 
     @Test
-    public void createNewConsultantTest() throws FileNotFoundException {
-        MockedStatic<UUID> uuid = mockStatic(UUID.class);
-        uuid.when(UUID::randomUUID).thenReturn(id).thenReturn(id).thenReturn(id1);
-        MockedStatic<ConsultantMapper> cons = mockStatic(ConsultantMapper.class);
-        cons.when(() -> ConsultantMapper.mapConsultantToConsultantDto(any())).thenReturn(mdw);
-        cons.when(() -> ConsultantMapper.mapConsultantDtoToConsultant(any())).thenReturn(consultant);
-        MockedStatic<CVMapper> cvm = mockStatic(CVMapper.class);
-        cvm.when(() -> CVMapper.mapCVToCVDto(any())).thenReturn(cvDto);
-        cvm.when(() -> CVMapper.mapCVDtoToCV(any())).thenReturn(cv);
-        when(cvService.createCVForNewConsultant(any())).thenReturn(cvDto);
-        when(repo.save(any())).thenReturn(consultant);
-        when(repo.existsById(id)).thenReturn(true);
-        when(repo.existsById(id1)).thenReturn(false);
+    void createsNewConsultantWithGeneratedUserAndUniqueId() {
+        consultantRepository.queueExists(true, false);
+        MedewerkerDto input = new MedewerkerDto("Jane", null, "Doe", "0612345678", "jane@example.com", TestData.cvDto(1L), List.of(TestData.cvDto(2L)));
 
-        MedewerkerDto m = service.createNewConsultant(mdw);
+        MedewerkerOnboardingResponseDto response = service.createNewConsultant(input);
 
-        verify(repo, times(1)).save(any());
-        verify(repo, times(3)).existsById(any());
-        assertThat(m).isEqualTo(mdw);
-        cons.close();
-        uuid.close();
+        assertThat(response.consultant().getId()).isNotBlank();
+        assertThat(response.consultant().getOrgineleCv()).isNull();
+        assertThat(response.consultant().getCvLijst()).isEmpty();
+        assertThat(response.username()).isEqualTo("jane@example.com");
+        assertThat(response.oneTimePassword()).hasSize(20);
+        assertThat(consultantRepository.savedEntities()).hasSize(1);
     }
 
     @Test
-    public void updateConsultantWhenOriginalCvAndUsedCvListDoesNotEqualsConsultantCvAndCVListTest() throws FileNotFoundException {
-        MockedStatic<ConsultantMapper> cons = mockStatic(ConsultantMapper.class);
-        cons.when(() -> ConsultantMapper.mapConsultantToConsultantDto(any())).thenReturn(mdw1);
-        cons.when(() -> ConsultantMapper.mapConsultantDtoToConsultant(any())).thenReturn(consultant1);
-        when(repo.existsById(id)).thenReturn(true);
-        when(repo.getReferenceById(id)).thenReturn(consultant);
-        when(cvService.cvExist(any())).thenReturn(true);
-        when(cvService.updateCV(any())).thenReturn(cvDto);
+    void createsFallbackUsernameWhenEmailIsBlank() {
+        MedewerkerDto input = new MedewerkerDto("Jane", null, "Doe", "0612345678", " ", null, List.of());
 
-        MedewerkerDto m = service.updateConsultant(mdw1);
-        verify(repo, times(1)).save(any());
-        verify(repo, times(1)).existsById(any());
-        verify(repo, times(1)).getReferenceById(any());
-        assertThat(m.getId()).isEqualTo(mdw1.getId());
-        assertThat(m.getOrgineleCv()).isEqualTo(mdw1.getOrgineleCv());
-        assertThat(m.getCvLijst()).isEqualTo(mdw1.getCvLijst());
-        assertThat(m.getVoornaam()).isEqualTo(mdw1.getVoornaam());
-        assertThat(m.getAchternaam()).isEqualTo(mdw1.getAchternaam());
-        assertThat(m.getTelefoon()).isEqualTo(mdw1.getTelefoon());
-        assertThat(m.getEmailAdres()).isEqualTo(mdw1.getEmailAdres());
-        cons.close();
+        MedewerkerOnboardingResponseDto response = service.createNewConsultant(input);
 
+        assertThat(response.username()).startsWith("jane.doe.");
+        assertThat(response.username()).doesNotContain(" ");
     }
 
     @Test
-    public void updateConsultantWhenOriginalCvAndUsedCvListDoesNotEqualsConsultantCvAndCvAndCvIdDoesNotExistListTest() throws FileNotFoundException {
-        MockedStatic<ConsultantMapper> cons = mockStatic(ConsultantMapper.class);
-        cons.when(() -> ConsultantMapper.mapConsultantToConsultantDto(any())).thenReturn(mdw1);
-        cons.when(() -> ConsultantMapper.mapConsultantDtoToConsultant(any())).thenReturn(consultant1);
-        when(repo.existsById(id)).thenReturn(true);
-        when(repo.getReferenceById(id)).thenReturn(consultant);
-        when(cvService.cvExist(any())).thenReturn(false);
-        when(cvService.createNewCv(any())).thenReturn(cvDto);
-        when(cvService.getCvById(any())).thenReturn(cvDto);
+    void completesOneTimeCvAndKeepsUserEnabledForFollowUpUpdate() throws Exception {
+        skillMatrixRepository.put(TestData.skillMatrix(1L, "Backend", "Java"));
+        CustomUser user = TestData.user("jane@example.com", "ROLE_CONSULTANT");
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, null, new ArrayList<>());
+        consultant.setCustomUser(user);
+        userRepository.put(user);
+        consultantRepository.put(consultant);
 
-        MedewerkerDto m = service.updateConsultant(mdw1);
-        verify(repo, times(1)).save(any());
-        verify(repo, times(1)).existsById(any());
-        verify(repo, times(1)).getReferenceById(any());
-        assertThat(m.getId()).isEqualTo(mdw1.getId());
-        assertThat(m.getOrgineleCv()).isEqualTo(mdw1.getOrgineleCv());
-        assertThat(m.getCvLijst()).isEqualTo(mdw1.getCvLijst());
-        assertThat(m.getVoornaam()).isEqualTo(mdw1.getVoornaam());
-        assertThat(m.getAchternaam()).isEqualTo(mdw1.getAchternaam());
-        assertThat(m.getTelefoon()).isEqualTo(mdw1.getTelefoon());
-        assertThat(m.getEmailAdres()).isEqualTo(mdw1.getEmailAdres());
-        cons.close();
+        MedewerkerDto result = service.completeOneTimeCv("jane@example.com", TestData.cvDto(99L));
 
+        assertThat(result.getOrgineleCv()).isNotNull();
+        assertThat(result.getCvLijst()).hasSize(1);
+        assertThat(user.isEnabled()).isTrue();
     }
 
     @Test
-    public void updateConsultantFieldsDoNotEqualsConsultantTest() throws FileNotFoundException {
-        MockedStatic<ConsultantMapper> cons = mockStatic(ConsultantMapper.class);
-        cons.when(() -> ConsultantMapper.mapConsultantToConsultantDto(any())).thenReturn(mdw);
-        cons.when(() -> ConsultantMapper.mapConsultantDtoToConsultant(any())).thenReturn(consultant);
-        MockedStatic<CVMapper> cvs = mockStatic(CVMapper.class);
-        cvs.when(() -> CVMapper.mapCVDtoToCV(any())).thenReturn(cv);
-        cvs.when(() -> CVMapper.CollectorCvDtoListToCvList(any())).thenReturn(cvList);
-        when(repo.existsById(any())).thenReturn(true);
-        when(repo.getReferenceById(any())).thenReturn(consultant);
+    void completeOneTimeCvRejectsAlreadyCompletedOrMissingUsers() {
+        CustomUser user = TestData.user("jane@example.com", "ROLE_CONSULTANT");
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), new ArrayList<>());
+        consultant.setCustomUser(user);
+        userRepository.put(user);
+        consultantRepository.put(consultant);
 
-        MedewerkerDto m = service.updateConsultant(mdw);
-        verify(repo, times(1)).save(any());
-        verify(repo, times(1)).existsById(any());
-        assertThat(m.getId()).isEqualTo(mdw.getId());
-        assertThat(m.getOrgineleCv()).isEqualTo(mdw.getOrgineleCv());
-        assertThat(m.getCvLijst()).isEqualTo(mdw.getCvLijst());
-        assertThat(m.getVoornaam()).isEqualTo(mdw.getVoornaam());
-        assertThat(m.getAchternaam()).isEqualTo(mdw.getAchternaam());
-        assertThat(m.getTelefoon()).isEqualTo(mdw.getTelefoon());
-        assertThat(m.getEmailAdres()).isEqualTo(mdw.getEmailAdres());
-        cons.close();
-        cvs.close();
+        assertThrows(IllegalStateException.class, () -> service.completeOneTimeCv("jane@example.com", TestData.cvDto(1L)));
+        assertThrows(FileNotFoundException.class, () -> service.completeOneTimeCv("missing@example.com", TestData.cvDto(1L)));
+        assertThat(user.isEnabled()).isFalse();
     }
 
     @Test
-    public void updateConsultantThrowsFileNotFoundExceptionTest() {
-        when(repo.existsById(any())).thenReturn(false);
+    void getsConsultantForOwningUserOnly() throws Exception {
+        Consultant consultant = consultantForUser("jane@example.com", TestData.CONSULTANT_ID);
+        consultantRepository.put(consultant);
 
-        assertThrowsExactly(FileNotFoundException.class, () -> service.updateConsultant(mdw));
+        MedewerkerDto result = service.getConsultantForUser("jane@example.com", TestData.CONSULTANT_ID.toString());
+
+        assertThat(result.getId()).isEqualTo(TestData.CONSULTANT_ID.toString());
+        assertThrows(AccessDeniedException.class, () -> service.getConsultantForUser("jane@example.com", TestData.OTHER_CONSULTANT_ID.toString()));
     }
 
     @Test
-    public void addNewCvToUsedCvList() {
-        when(repo.getReferenceById(any())).thenReturn(consultant1);
-        MockedStatic<CVMapper> cvs = mockStatic(CVMapper.class);
-        List<CurriculumVitaeDto> list2 = List.of(cvDto1, cvDto);
-        mdw2 = mdw1;
-        mdw2.setCvLijst(list2);
-        cvs.when(() -> CVMapper.CollectorCvDtoListToCvList(any())).thenReturn(cvList);
-        MockedStatic<ConsultantMapper> cons = mockStatic(ConsultantMapper.class);
-        cons.when(() -> ConsultantMapper.mapConsultantToConsultantDto(any())).thenReturn(mdw2);
+    void updateOwnConsultantValidatesRequiredIdAndOwnership() throws Exception {
+        Consultant consultant = consultantForUser("jane@example.com", TestData.CONSULTANT_ID);
+        userRepository.put(consultant.getCustomUser());
+        consultantRepository.put(consultant);
+        cvRepository.put(TestData.cv(1L));
+        MedewerkerDto missingId = TestData.consultantDto(null, TestData.cvDto(1L), List.of());
+        MedewerkerDto wrongId = TestData.consultantDto(TestData.OTHER_CONSULTANT_ID, TestData.cvDto(1L), List.of());
+        MedewerkerDto valid = TestData.consultantDto(TestData.CONSULTANT_ID, TestData.cvDto(1L), List.of());
 
-        MedewerkerDto m = service.addNewCvToUsedCVList(mdw.getId(), cvDto1);
-        verify(repo, times(1)).save(any());
-        verify(repo, times(1)).getReferenceById(any());
-        assertThat(m.getId()).isEqualTo(mdw1.getId());
-        assertThat(m.getCvLijst().size()).isEqualTo(mdw1.getCvLijst().size());
-        cvs.close();
-        cons.close();
+        assertThrows(IllegalArgumentException.class, () -> service.updateOwnConsultant("jane@example.com", missingId));
+        assertThrows(AccessDeniedException.class, () -> service.updateOwnConsultant("jane@example.com", wrongId));
+        assertThat(service.updateOwnConsultant("jane@example.com", valid).getId()).isEqualTo(TestData.CONSULTANT_ID.toString());
     }
 
     @Test
-    public void getConsultantTest() throws FileNotFoundException {
-        when(repo.existsById(any())).thenReturn(true);
-        MockedStatic<ConsultantMapper> cons = mockStatic(ConsultantMapper.class);
-        cons.when(() -> ConsultantMapper.mapConsultantToConsultantDto(any())).thenReturn(mdw);
+    void updateOwnConsultantDisablesUserAfterSuccessfulUpdate() throws Exception {
+        cvRepository.put(TestData.cv(1L));
+        CustomUser user = TestData.user("jane@example.com", "ROLE_CONSULTANT");
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), new ArrayList<>());
+        consultant.setCustomUser(user);
+        userRepository.put(user);
+        consultantRepository.put(consultant);
+        MedewerkerDto update = TestData.consultantDto(TestData.CONSULTANT_ID, TestData.cvDto(1L), new ArrayList<>());
 
-        MedewerkerDto m = service.getConsultant(mdw.getId());
-        verify(repo, times(1)).existsById(any());
-        assertThat(m.getId()).isEqualTo(mdw.getId());
-        cons.close();
+        MedewerkerDto result = service.updateOwnConsultant("jane@example.com", update);
+
+        assertThat(result.getId()).isEqualTo(TestData.CONSULTANT_ID.toString());
+        assertThat(consultantRepository.savedEntities()).hasSize(1);
+        assertThat(consultantRepository.savedEntities().getFirst().getCustomUser()).isSameAs(user);
+        assertThat(user.isEnabled()).isFalse();
+        assertThat(userRepository.savedEntities()).contains(user);
     }
 
     @Test
-    public void getConsultantThrowsFileNotFoundExceptionTest() {
-        when(repo.existsById(any())).thenReturn(false);
-        assertThrowsExactly(FileNotFoundException.class, () -> service.getConsultant(mdw.getId()));
+    void updatesConsultantWithExistingAndNewUsedCvs() throws Exception {
+        cvRepository.put(TestData.cv(1L));
+        cvRepository.put(TestData.cv(2L));
+        skillMatrixRepository.put(TestData.skillMatrix(1L, "Backend", "Java"));
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), new ArrayList<>(List.of(TestData.cv(2L))));
+        consultantRepository.put(consultant);
+        CurriculumVitaeDto newCv = TestData.cvDto(99L);
+        newCv.setId(null);
+        MedewerkerDto update = TestData.consultantDto(
+                TestData.CONSULTANT_ID,
+                TestData.cvDto(1L),
+                new ArrayList<>(List.of(TestData.cvDto(2L), newCv))
+        );
+
+        MedewerkerDto result = service.updateConsultant(update);
+
+        assertThat(result.getCvLijst()).extracting(CurriculumVitaeDto::getId).containsExactly(2L, 3L);
+        assertThat(result.getVoornaam()).isEqualTo("Jane");
+        assertThat(cvRepository.find(3L)).isPresent();
     }
 
     @Test
-    public void getConsultantByNameTest() throws FileNotFoundException {
-        when(repo.getByFirstnameAndLastname(any(), any())).thenReturn(Optional.ofNullable(consultant));
-        MockedStatic<ConsultantMapper> cons = mockStatic(ConsultantMapper.class);
-        cons.when(() -> ConsultantMapper.mapConsultantToConsultantDto(any())).thenReturn(mdw);
+    void updatesConsultantFieldsAndReturnsAdjustedValues() throws Exception {
+        cvRepository.put(TestData.cv(1L));
+        CurriculumVitaeDto updatedOriginalCv = TestData.cvDto(1L);
+        updatedOriginalCv.setProfiel("Updated profile");
+        Consultant consultant = new Consultant(
+                TestData.CONSULTANT_ID,
+                "Old",
+                "Name",
+                "0600000000",
+                "old@example.com",
+                TestData.cv(1L),
+                new ArrayList<>()
+        );
+        consultantRepository.put(consultant);
+        MedewerkerDto update = new MedewerkerDto(
+                "New",
+                TestData.CONSULTANT_ID.toString(),
+                "Person",
+                "0611111111",
+                "new@example.com",
+                updatedOriginalCv,
+                new ArrayList<>()
+        );
 
-        MedewerkerDto m = service.getConsultantByName("Kees", "van der Plas");
-        verify(repo, times(1)).getByFirstnameAndLastname(any(), any());
-        assertThat(m.getId()).isEqualTo(mdw.getId());
-        cons.close();
+        MedewerkerDto result = service.updateConsultant(update);
+
+        assertThat(result.getVoornaam()).isEqualTo("New");
+        assertThat(result.getAchternaam()).isEqualTo("Person");
+        assertThat(result.getTelefoon()).isEqualTo("0611111111");
+        assertThat(result.getEmailAdres()).isEqualTo("new@example.com");
+        assertThat(result.getOrgineleCv().getProfiel()).isEqualTo("Updated profile");
+        assertThat(consultantRepository.savedEntities().getFirst().getFirstname()).isEqualTo("New");
     }
 
     @Test
-    public void getConsultantByNameThrowsFileNotFoundExceptionTest() {
-        when(repo.getByFirstnameAndLastname(any(), any())).thenReturn(Optional.empty());
-        assertThrowsExactly(FileNotFoundException.class, () -> service.getConsultantByName("Piet", "van der Plas"));
+    void keepsOriginalCvAndMatchingCvListEntryInSync() throws Exception {
+        cvRepository.put(TestData.cv(1L));
+        CurriculumVitaeDto updatedOriginalCv = TestData.cvDto(1L);
+        updatedOriginalCv.setBestandsNaam("updated.pdf");
+        updatedOriginalCv.setCompetenties(new ArrayList<>(List.of("Java", "Spring", "Angular")));
+        updatedOriginalCv.setProfiel("Updated profile");
+        updatedOriginalCv.setOpleiding("Updated education");
+        CurriculumVitaeDto staleListCv = TestData.cvDto(1L);
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), new ArrayList<>(List.of(TestData.cv(1L))));
+        consultantRepository.put(consultant);
+        MedewerkerDto update = TestData.consultantDto(TestData.CONSULTANT_ID, updatedOriginalCv, new ArrayList<>(List.of(staleListCv)));
+
+        MedewerkerDto result = service.updateConsultant(update);
+
+        assertThat(result.getOrgineleCv().getBestandsNaam()).isEqualTo("updated.pdf");
+        assertThat(result.getOrgineleCv().getCompetenties()).containsExactly("Java", "Spring", "Angular");
+        assertThat(result.getOrgineleCv().getProfiel()).isEqualTo("Updated profile");
+        assertThat(result.getOrgineleCv().getOpleiding()).isEqualTo("Updated education");
+        assertThat(result.getCvLijst()).hasSize(1);
+        assertThat(result.getCvLijst().getFirst().getBestandsNaam()).isEqualTo("updated.pdf");
+        assertThat(result.getCvLijst().getFirst().getCompetenties()).containsExactly("Java", "Spring", "Angular");
+        assertThat(result.getCvLijst().getFirst().getProfiel()).isEqualTo("Updated profile");
+        assertThat(result.getCvLijst().getFirst().getOpleiding()).isEqualTo("Updated education");
+        assertThat(cvRepository.find(1L).orElseThrow().getProfile()).isEqualTo("Updated profile");
     }
 
     @Test
-    public void deleteConsultantTest() throws FileNotFoundException {
-        when(repo.existsById(any())).thenReturn(true);
-        service.deleteConsultant(mdw);
-        verify(repo, times(1)).deleteById(any());
+    void updatesConsultantViaDirectSaveWhenUsedCvListIsUnchanged() throws Exception {
+        cvRepository.put(TestData.cv(1L));
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), new ArrayList<>());
+        consultantRepository.put(consultant);
+        MedewerkerDto update = TestData.consultantDto(TestData.CONSULTANT_ID, TestData.cvDto(1L), new ArrayList<>());
+
+        MedewerkerDto result = service.updateConsultant(update);
+
+        assertThat(result.getCvLijst()).isEmpty();
+        assertThat(consultantRepository.savedEntities()).hasSize(1);
     }
 
     @Test
-    public void deleteConsultantThrowsFileNotFoundExceptionTest() {
-        when(repo.existsById(any())).thenReturn(false);
-        assertThrowsExactly(FileNotFoundException.class, () -> service.deleteConsultant(mdw));
+    void updatesConsultantWithNullOriginalAndCvList() throws Exception {
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), List.of(TestData.cv(1L)));
+        consultantRepository.put(consultant);
+        MedewerkerDto update = TestData.consultantDto(TestData.CONSULTANT_ID, null, null);
+
+        MedewerkerDto result = service.updateConsultant(update);
+
+        assertThat(result.getOrgineleCv()).isNull();
+        assertThat(result.getCvLijst()).isEmpty();
+        assertThat(consultantRepository.savedEntities().getFirst().getOriginalCV()).isNull();
+        assertThat(consultantRepository.savedEntities().getFirst().getUsedCvs()).isEmpty();
+    }
+
+    @Test
+    void updateConsultantThrowsWhenMissing() {
+        assertThrows(FileNotFoundException.class, () -> service.updateConsultant(TestData.consultantDto(TestData.CONSULTANT_ID, TestData.cvDto(1L), List.of())));
+    }
+
+    @Test
+    void addsNewCvToUsedCvList() throws Exception {
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), new ArrayList<>(List.of(TestData.cv(1L))));
+        consultantRepository.put(consultant);
+        cvRepository.put(TestData.cv(1L));
+        skillMatrixRepository.put(TestData.skillMatrix(1L, "Backend", "Java"));
+        CurriculumVitaeDto newCv = TestData.cvDto(10L);
+        newCv.setMatrix(null);
+        newCv.setErvaring(null);
+
+        MedewerkerDto result = service.addNewCvToUsedCVList(TestData.CONSULTANT_ID.toString(), newCv);
+
+        assertThat(result.getCvLijst()).hasSize(2);
+        assertThat(result.getCvLijst().getLast().getMatrix()).isNotNull();
+        assertThat(result.getCvLijst().getLast().getErvaring()).isEmpty();
+        assertThat(cvRepository.find(2L)).isPresent();
+    }
+
+    @Test
+    void addNewCvToUsedCvListThrowsWhenConsultantIsMissing() {
+        assertThrows(FileNotFoundException.class, () -> service.addNewCvToUsedCVList(TestData.CONSULTANT_ID.toString(), TestData.cvDto(1L)));
+    }
+
+    @Test
+    void getsConsultantByIdAndNameAndThrowsWhenMissing() throws Exception {
+        Consultant consultant = TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), List.of(TestData.cv(2L)));
+        consultantRepository.put(consultant);
+
+        assertThat(service.getConsultant(TestData.CONSULTANT_ID.toString()).getEmailAdres()).isEqualTo("jane@example.com");
+        assertThat(service.getConsultantByName("Jane", "Doe").getId()).isEqualTo(TestData.CONSULTANT_ID.toString());
+        assertThat(service.getConsultantByName("jAnE", "dOE").getId()).isEqualTo(TestData.CONSULTANT_ID.toString());
+        assertThrows(FileNotFoundException.class, () -> service.getConsultant(TestData.OTHER_CONSULTANT_ID.toString()));
+        assertThrows(FileNotFoundException.class, () -> service.getConsultantByName("Missing", "Person"));
+    }
+
+    @Test
+    void returnsConsultantUserNames() {
+        consultantRepository.put(TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), List.of()));
+        consultantRepository.put(new Consultant(TestData.OTHER_CONSULTANT_ID, "Ada", "Lovelace", "0611111111", "ada@example.com", null, List.of()));
+
+        List<String> result = service.getUserNames();
+
+        assertThat(result).containsExactly(
+                "Jane Doe",
+                "Ada Lovelace"
+        );
+    }
+
+    @Test
+    void deletesConsultantAndOwnedCvs() throws Exception {
+        cvRepository.put(TestData.cv(1L));
+        cvRepository.put(TestData.cv(2L));
+        skillMatrixRepository.put(TestData.skillMatrix(1L, "Backend", "Java"));
+        skillMatrixRepository.put(TestData.skillMatrix(2L, "Backend", "Java"));
+        experienceRepository.put(TestData.experience(1L));
+        experienceRepository.put(TestData.experience(2L));
+        MedewerkerDto dto = TestData.consultantDto(TestData.CONSULTANT_ID, null, List.of());
+        consultantRepository.put(TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), List.of(TestData.cv(2L))));
+
+        service.deleteConsultant(dto);
+
+        assertThat(cvRepository.deletedIds()).containsExactly(2L, 1L);
+        assertThat(consultantRepository.deletedIds()).containsExactly(TestData.CONSULTANT_ID);
+    }
+
+    @Test
+    void deletesSharedOriginalAndUsedCvOnlyOnce() throws Exception {
+        cvRepository.put(TestData.cv(1L));
+        skillMatrixRepository.put(TestData.skillMatrix(1L, "Backend", "Java"));
+        experienceRepository.put(TestData.experience(1L));
+        MedewerkerDto dto = TestData.consultantDto(TestData.CONSULTANT_ID, TestData.cvDto(1L), List.of(TestData.cvDto(1L)));
+        consultantRepository.put(TestData.consultant(TestData.CONSULTANT_ID, TestData.cv(1L), List.of(TestData.cv(1L))));
+
+        service.deleteConsultant(dto);
+
+        assertThat(cvRepository.deletedIds()).containsExactly(1L);
+        assertThat(skillMatrixRepository.deletedIds()).containsExactly(1L);
+        assertThat(experienceRepository.deletedIds()).containsExactly(1L);
+        assertThat(consultantRepository.deletedIds()).containsExactly(TestData.CONSULTANT_ID);
+    }
+
+    @Test
+    void deleteConsultantThrowsWhenMissing() {
+        MedewerkerDto dto = TestData.consultantDto(TestData.CONSULTANT_ID, TestData.cvDto(1L), List.of());
+
+        assertThrows(FileNotFoundException.class, () -> service.deleteConsultant(dto));
+    }
+
+    private Consultant consultantForUser(String username, UUID id) {
+        CustomUser user = TestData.user(username, "ROLE_CONSULTANT");
+        Consultant consultant = TestData.consultant(id, TestData.cv(1L), new ArrayList<>());
+        consultant.setCustomUser(user);
+        return consultant;
     }
 }

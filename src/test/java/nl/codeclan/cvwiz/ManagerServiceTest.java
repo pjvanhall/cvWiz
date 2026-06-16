@@ -1,142 +1,161 @@
 package nl.codeclan.cvwiz;
 
 import jakarta.persistence.EntityNotFoundException;
-
 import nl.codeclan.cvwiz.dto.BeheerderDto;
-import nl.codeclan.cvwiz.mapper.ManagerMapper;
+import nl.codeclan.cvwiz.dto.MedewerkerOnboardingResponseDto;
+import nl.codeclan.cvwiz.dto.CurriculumVitaeDto;
+import nl.codeclan.cvwiz.dto.MedewerkerDto;
+import nl.codeclan.cvwiz.model.CustomUser;
 import nl.codeclan.cvwiz.model.Manager;
+import nl.codeclan.cvwiz.repository.CustomUserRepository;
 import nl.codeclan.cvwiz.repository.ManagerRepository;
+import nl.codeclan.cvwiz.service.ConsultantService;
+import nl.codeclan.cvwiz.service.CustomUserService;
 import nl.codeclan.cvwiz.service.ManagerService;
+import nl.codeclan.cvwiz.support.RepositoryDoubles;
+import nl.codeclan.cvwiz.support.TestData;
+import nl.codeclan.cvwiz.support.TestPasswordEncoder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import java.io.FileNotFoundException;
-import java.util.UUID;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(MockitoExtension.class)
-public class ManagerServiceTest {
+class ManagerServiceTest {
 
-    @Mock
-    UUID id;
-    @Mock
-    UUID id1;
-    @Mock
-    Manager manager;
-    @Mock
-    Manager manager1;
-    @Mock
-    BeheerderDto behDto;
-    @Mock
-    BeheerderDto behDto1;
-    @InjectMocks
+    private RepositoryDoubles.TestRepository<ManagerRepository, Manager, java.util.UUID> managerRepository;
+    private RecordingConsultantService consultantService;
     private ManagerService service;
-    @Mock
-    private ManagerRepository repo;
 
     @BeforeEach
-    public void init() {
-        id = UUID.randomUUID();
-        id1 = UUID.randomUUID();
-        manager = new Manager(id1, "Jan", "op 't Hof", "0122-456789", "j.op.t.hof@iest.nl");
-        behDto = new BeheerderDto("Jan", id1.toString(), "op 't Hof", "0122-456789", "j.op.t.hof@iets.nl");
-        manager1 = new Manager(id1, "Jan-Kees", "op 't Hof", "0122-456789", "jk.op.t.hof@iest.nl");
-        behDto1 = new BeheerderDto("Jan-Kees", id1.toString(), "op 't Hof", "0122-456789", "jk.op.t.hof@iets.nl");
-
+    void setUp() {
+        managerRepository = RepositoryDoubles.managers();
+        RepositoryDoubles.TestRepository<CustomUserRepository, CustomUser, String> userRepository = RepositoryDoubles.users();
+        CustomUserService customUserService = new CustomUserService(userRepository.repository(), new TestPasswordEncoder());
+        consultantService = new RecordingConsultantService();
+        service = new ManagerService(managerRepository.repository(), consultantService, customUserService);
     }
 
     @Test
-    public void createNewManagerTest() {
-        MockedStatic<UUID> uuid = mockStatic(UUID.class);
-        uuid.when(UUID::randomUUID).thenReturn(id).thenReturn(id1);
-        when(repo.existsById(any())).thenReturn(true).thenReturn(false);
-        MockedStatic<ManagerMapper> man = mockStatic(ManagerMapper.class);
-        man.when(() -> ManagerMapper.managerToManagerDto(any())).thenReturn(behDto);
-        man.when(() -> ManagerMapper.managerDtoToManager(any())).thenReturn(manager);
-        when(repo.save(any())).thenReturn(manager);
+    void createsNewManagerWithUniqueIdAndEmailUsername() {
+        managerRepository.queueExists(true, false);
+        BeheerderDto input = new BeheerderDto("John", null, "Manager", "0698765432", "john.manager@example.com");
 
-        BeheerderDto d = service.createNewManager(behDto);
+        BeheerderDto result = service.createNewManager(input);
 
-        verify(repo, times(2)).existsById(any());
-        verify(repo, times(1)).save(any());
-        assertThat(d.getId()).isEqualTo(id1.toString());
-        assertThat(d.getVoornaam()).isEqualTo(behDto.getVoornaam());
-        assertThat(d.getAchternaam()).isEqualTo(behDto.getAchternaam());
-        assertThat(d.getTelefoon()).isEqualTo(behDto.getTelefoon());
-        assertThat(d.getEmailAdres()).isEqualTo(behDto.getEmailAdres());
-        man.close();
-        uuid.close();
+        Manager saved = managerRepository.savedEntities().getFirst();
+        assertThat(result.getId()).isNotBlank();
+        assertThat(saved.getCustomUser().getUsername()).isEqualTo("john.manager@example.com");
+        assertThat(saved.getCustomUser().getAuthorisaties()).extracting(auth -> auth.getAuthorisatie()).containsExactly("ROLE_MANAGER");
     }
 
     @Test
-    public void updateManagerTest() throws EntityNotFoundException {
-        when(repo.existsById(any())).thenReturn(true);
-        MockedStatic<ManagerMapper> man = mockStatic(ManagerMapper.class);
-        man.when(() -> ManagerMapper.managerToManagerDto(any())).thenReturn(behDto1);
-        man.when(() -> ManagerMapper.managerDtoToManager(any())).thenReturn(manager1);
+    void createsFallbackUsernameWhenManagerEmailIsBlank() {
+        BeheerderDto input = new BeheerderDto("John", null, "Manager", "0698765432", " ");
 
-        BeheerderDto d = service.updateManager(behDto1);
+        service.createNewManager(input);
 
-        verify(repo, times(1)).existsById(any());
-        verify(repo, times(1)).save(any());
-        assertThat(d.getId()).isEqualTo(id1.toString());
-        assertThat(d.getVoornaam()).isEqualTo(behDto1.getVoornaam());
-        assertThat(d.getAchternaam()).isEqualTo(behDto1.getAchternaam());
-        assertThat(d.getTelefoon()).isEqualTo(behDto1.getTelefoon());
-        assertThat(d.getEmailAdres()).isEqualTo(behDto1.getEmailAdres());
-        man.close();
+        String username = managerRepository.savedEntities().getFirst().getCustomUser().getUsername();
+        assertThat(username).startsWith("john.manager.");
+        assertThat(username).doesNotContain(" ");
     }
 
     @Test
-    public void updateManagerThrowsEntityNotFoundException() throws EntityNotFoundException {
-        when(repo.existsById(any())).thenReturn(false);
-        assertThrowsExactly(EntityNotFoundException.class, () -> service.updateManager(behDto1));
+    void updatesGetsAndDeletesExistingManager() throws Exception {
+        managerRepository.put(TestData.manager(TestData.MANAGER_ID));
+
+        BeheerderDto updated = service.updateManager(TestData.managerDto(TestData.MANAGER_ID));
+        BeheerderDto found = service.getManager(TestData.MANAGER_ID);
+        service.deleteManager(TestData.MANAGER_ID);
+
+        assertThat(updated.getId()).isEqualTo(TestData.MANAGER_ID.toString());
+        assertThat(found.getEmailAdres()).isEqualTo("john.manager@example.com");
+        assertThat(managerRepository.deletedIds()).containsExactly(TestData.MANAGER_ID);
     }
 
     @Test
-    public void getManagerTest() throws FileNotFoundException {
-        MockedStatic<ManagerMapper> man = mockStatic(ManagerMapper.class);
-        man.when(() -> ManagerMapper.managerToManagerDto(any())).thenReturn(behDto);
-        when(repo.existsById(any())).thenReturn(true);
-        when(repo.getReferenceById(any())).thenReturn(manager);
-
-        BeheerderDto d = service.getManager(id1);
-        verify(repo, times(1)).existsById(any());
-        verify(repo, times(1)).getReferenceById(any());
-        assertThat(d.getId()).isEqualTo(id1.toString());
-        assertThat(d.getVoornaam()).isEqualTo(behDto.getVoornaam());
-        assertThat(d.getAchternaam()).isEqualTo(behDto.getAchternaam());
-        assertThat(d.getTelefoon()).isEqualTo(behDto.getTelefoon());
-        assertThat(d.getEmailAdres()).isEqualTo(behDto.getEmailAdres());
-        man.close();
+    void managerOperationsThrowWhenMissing() {
+        assertThrows(EntityNotFoundException.class, () -> service.updateManager(TestData.managerDto(TestData.MANAGER_ID)));
+        assertThrows(FileNotFoundException.class, () -> service.getManager(TestData.MANAGER_ID));
+        assertThrows(FileNotFoundException.class, () -> service.deleteManager(TestData.MANAGER_ID));
     }
 
     @Test
-    public void getManagerThrowsFileNotFoundException() {
-        when(repo.existsById(any())).thenReturn(false);
-        assertThrowsExactly(FileNotFoundException.class, () -> service.getManager(id1));
+    void delegatesConsultantWorkflows() throws Exception {
+        MedewerkerDto consultant = TestData.consultantDto(TestData.CONSULTANT_ID, TestData.cvDto(1L), List.of());
+        CurriculumVitaeDto cv = TestData.cvDto(2L);
+
+        MedewerkerOnboardingResponseDto created = service.createNewConsultant(consultant);
+        MedewerkerDto updated = service.updateConsultant(consultant);
+        MedewerkerDto withCv = service.addNewCvToConsultantCvList(TestData.CONSULTANT_ID.toString(), cv);
+        MedewerkerDto found = service.getConsultant("Jane", "Doe");
+        service.deleteConsultant("Jane", "Doe");
+
+        assertThat(created.consultant()).isSameAs(consultant);
+        assertThat(updated).isSameAs(consultant);
+        assertThat(withCv).isSameAs(consultant);
+        assertThat(found).isSameAs(consultant);
+        assertThat(consultantService.deleted).isSameAs(consultant);
+        assertThat(consultantService.addedCv).isSameAs(cv);
     }
 
     @Test
-    public void deleteManagerTest() throws EntityNotFoundException, FileNotFoundException {
-        when(repo.existsById(any())).thenReturn(true);
-        service.deleteManager(id);
-        verify(repo, times(1)).existsById(any());
-        verify(repo, times(1)).deleteById(any());
+    void getsManagerAndConsultantNames() {
+        managerRepository.put(TestData.manager(TestData.MANAGER_ID));
+        consultantService.userNames = List.of("Jane Doe");
+
+        List<String> result = service.getUsers();
+
+        assertThat(result).containsExactly(
+                ("John Manager"),
+                ("Jane Doe")
+        );
     }
 
-    @Test
-    public void deleteManagerThrowsEntityNotFoundException() {
-        when(repo.existsById(any())).thenReturn(false);
-        assertThrowsExactly(FileNotFoundException.class, () -> service.deleteManager(id1));
+    private static final class RecordingConsultantService extends ConsultantService {
+        private MedewerkerDto consultant;
+        private CurriculumVitaeDto addedCv;
+        private MedewerkerDto deleted;
+        private List<String> userNames = List.of();
+
+        private RecordingConsultantService() {
+            super(null, null, null);
+        }
+
+        @Override
+        public MedewerkerOnboardingResponseDto createNewConsultant(MedewerkerDto dto) {
+            consultant = dto;
+            return new MedewerkerOnboardingResponseDto(dto, "username", "password");
+        }
+
+        @Override
+        public MedewerkerDto updateConsultant(MedewerkerDto dto) {
+            consultant = dto;
+            return dto;
+        }
+
+        @Override
+        public MedewerkerDto addNewCvToUsedCVList(String id, CurriculumVitaeDto cvDto) {
+            addedCv = cvDto;
+            return consultant;
+        }
+
+        @Override
+        public MedewerkerDto getConsultantByName(String firstname, String lastname) {
+            return consultant;
+        }
+
+        @Override
+        public void deleteConsultant(MedewerkerDto dto) {
+            deleted = dto;
+        }
+
+        @Override
+        public List<String> getUserNames() {
+            return userNames;
+        }
     }
-
-
 }

@@ -15,7 +15,7 @@ public class ConsultantMapper {
     }
 
     public static MedewerkerDto mapConsultantToConsultantDto(Consultant c) {
-        return new MedewerkerDto(c.getFirstname(), c.getConsultantID().toString(), c.getLastname(), c.getTelephone(), c.getEmail(), CVMapper.mapCVToCVDto(c.getOriginalCV()), CVMapper.CollectorCvListToCvDtoList(c.getUsedCvs()));
+        return new MedewerkerDto(c.getFirstname(), c.getConsultantId().toString(), c.getLastname(), c.getTelephone(), c.getEmail(), CVMapper.mapCVToCVDto(c.getOriginalCV()), CVMapper.CollectorCvListToCvDtoList(c.getUsedCvs()));
     }
 
 }

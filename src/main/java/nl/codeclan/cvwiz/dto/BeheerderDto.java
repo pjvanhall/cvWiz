@@ -1,10 +1,23 @@
 package nl.codeclan.cvwiz.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class BeheerderDto {
+    @Size(max = 36)
     String id;
+    @NotBlank
+    @Size(max = 100)
     final String voornaam;
+    @NotBlank
+    @Size(max = 100)
     final String achternaam;
+    @Size(max = 50)
     final String telefoon;
+    @NotBlank
+    @Email
+    @Size(max = 254)
     final String emailAdres;
 
     public BeheerderDto(String voornaam, String id, String achternaam, String telefoon, String emailAdres) {

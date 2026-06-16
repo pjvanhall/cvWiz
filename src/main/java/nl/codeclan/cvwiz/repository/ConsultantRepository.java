@@ -8,5 +8,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ConsultantRepository extends JpaRepository<Consultant, UUID> {
-    Optional<Consultant> getByFirstnameAndLastname(String firstname, String lastname);
+    Optional<Consultant> findByFirstnameIgnoreCaseAndLastnameIgnoreCase(String firstname, String lastname);
+    Optional<Consultant> findByCustomUserUsername(String username);
 }

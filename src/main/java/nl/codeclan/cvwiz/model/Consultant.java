@@ -1,5 +1,6 @@
 package nl.codeclan.cvwiz.model;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
@@ -12,7 +13,7 @@ import java.util.UUID;
 public class Consultant {
 
     @Id
-    UUID consultantID;
+    UUID consultantId;
     String firstname;
     String lastname;
     String telephone;
@@ -21,12 +22,14 @@ public class Consultant {
     Cv originalCV;
     @OneToMany
     List<Cv> usedCvs;
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    CustomUser customUser;
 
     public Consultant() {
     }
 
-    public Consultant(UUID consultantID, String firstname, String lastname, String telephone, String email, Cv originalCV, List<Cv> usedCvs) {
-        this.consultantID = consultantID;
+    public Consultant(UUID consultantId, String firstname, String lastname, String telephone, String email, Cv originalCV, List<Cv> usedCvs) {
+        this.consultantId = consultantId;
         this.firstname = firstname;
         this.lastname = lastname;
         this.telephone = telephone;
@@ -35,12 +38,20 @@ public class Consultant {
         this.usedCvs = usedCvs;
     }
 
-    public UUID getConsultantID() {
-        return consultantID;
+    public CustomUser getCustomUser() {
+        return customUser;
     }
 
-    public void setConsultantID(UUID consultantID) {
-        this.consultantID = consultantID;
+    public void setCustomUser(CustomUser customUser) {
+        this.customUser = customUser;
+    }
+
+    public UUID getConsultantId() {
+        return consultantId;
+    }
+
+    public void setConsultantId(UUID consultantID) {
+        this.consultantId = consultantID;
     }
 
     public String getFirstname() {
@@ -90,4 +101,6 @@ public class Consultant {
     public void setUsedCvs(List<Cv> usedCvs) {
         this.usedCvs = usedCvs;
     }
+
+
 }
