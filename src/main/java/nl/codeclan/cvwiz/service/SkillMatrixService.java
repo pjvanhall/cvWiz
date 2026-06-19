@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class SkillMatrixService {
@@ -91,6 +92,12 @@ public class SkillMatrixService {
         }
     }
 
+    public List<TechniekMatrixDto> getAllSkillMatrices() {
+        return repo.findAll().stream()
+                .map(SkillMatrixMapper::mapSkillMatrixToDto)
+                .toList();
+    }
+
     public String getAllCategoriesOfBaseSkillMatrix() throws FileNotFoundException {
         Optional<SkillMatrix> matrix = repo.findById(1L);
         if (matrix.isPresent()) {
@@ -132,6 +139,21 @@ public class SkillMatrixService {
         }
     }
 
+    public String addNewEmptyCategoryToMapCategories(String category) {
+        if (!checkIfCategoryExistsInBaseMatrix(category)) {
+            List<SkillMatrix> matrices = repo.findAll();
+            for (SkillMatrix matrix : matrices) {
+                Map<String, Map<String, Integer>> categories = copySkills(matrix.getSkills());
+                categories.computeIfAbsent(category, key -> new HashMap<>());
+                matrix.setSkills(categories);
+            }
+            repo.saveAll(matrices);
+            return "De category: " + category + " is succesvol toegevoegd.";
+        } else {
+            return "De category: " + category + " bestaat al in de basis matrix!";
+        }
+    }
+
     public String addNewToolToMapCategories(String category, String tool) throws FileNotFoundException {
         SkillMatrix baseMatrix = getBaseSkillMatrix();
         Map<String, Map<String, Integer>> baseSkills = copySkills(baseMatrix.getSkills());
@@ -151,6 +173,84 @@ public class SkillMatrixService {
         }
         repo.saveAll(matrices);
         return "De category " + category + " is succesvol aangevuld met " + tool + ". En bestaat nu uit de volgende skills: " + getAllToolsOfBaseSkillMatrixCategory(category);
+    }
+
+    public String editCategoryInMapCategories(String oldCategory, String newCategory) throws FileNotFoundException {
+        if (!checkIfCategoryExistsInBaseMatrix(oldCategory)) {
+            throw new FileNotFoundException("Er is geen category gevonden met de naam " + oldCategory + "!");
+        }
+        if (checkIfCategoryExistsInBaseMatrix(newCategory)) {
+            throw new IllegalArgumentException("De category: " + newCategory + " bestaat al in de basis matrix!");
+        }
+        List<SkillMatrix> matrices = repo.findAll();
+        for (SkillMatrix matrix : matrices) {
+            Map<String, Map<String, Integer>> categories = copySkills(matrix.getSkills());
+            if (categories.containsKey(oldCategory)) {
+                Map<String, Integer> tools = categories.remove(oldCategory);
+                categories.put(newCategory, tools);
+                matrix.setSkills(categories);
+            }
+        }
+        repo.saveAll(matrices);
+        return "De category " + oldCategory + " is succesvol gewijzigd naar " + newCategory + ".";
+    }
+
+    public String editToolInMapCategories(String category, String oldTool, String newTool) throws FileNotFoundException {
+        if (!checkIfCategoryContainsToolInBaseMatrix(category, oldTool)) {
+            throw new FileNotFoundException("De category " + category + " bevat geen tool met de naam " + oldTool + "!");
+        }
+        if (checkIfCategoryContainsToolInBaseMatrix(category, newTool)) {
+            throw new IllegalArgumentException("De category " + category + " bevat al een tool met de naam " + newTool + "!");
+        }
+        List<SkillMatrix> matrices = repo.findAll();
+        for (SkillMatrix matrix : matrices) {
+            Map<String, Map<String, Integer>> categories = copySkills(matrix.getSkills());
+            if (categories.containsKey(category)) {
+                Map<String, Integer> tools = categories.get(category);
+                if (tools.containsKey(oldTool)) {
+                    Integer score = tools.remove(oldTool);
+                    tools.put(newTool, score);
+                    matrix.setSkills(categories);
+                }
+            }
+        }
+        repo.saveAll(matrices);
+        return "De tool " + oldTool + " is succesvol gewijzigd naar " + newTool + " in category " + category + ".";
+    }
+
+    public String deleteCategoryFromMapCategories(String category) throws FileNotFoundException {
+        if (!checkIfCategoryExistsInBaseMatrix(category)) {
+            throw new FileNotFoundException("Er is geen category gevonden met de naam " + category + "!");
+        }
+        List<SkillMatrix> matrices = repo.findAll();
+        for (SkillMatrix matrix : matrices) {
+            Map<String, Map<String, Integer>> categories = copySkills(matrix.getSkills());
+            if (categories.containsKey(category)) {
+                categories.remove(category);
+                matrix.setSkills(categories);
+            }
+        }
+        repo.saveAll(matrices);
+        return "De category " + category + " is succesvol verwijderd uit alle matrices.";
+    }
+
+    public String deleteToolFromMapCategories(String category, String tool) throws FileNotFoundException {
+        if (!checkIfCategoryContainsToolInBaseMatrix(category, tool)) {
+            throw new FileNotFoundException("De category " + category + " bevat geen tool met de naam " + tool + "!");
+        }
+        List<SkillMatrix> matrices = repo.findAll();
+        for (SkillMatrix matrix : matrices) {
+            Map<String, Map<String, Integer>> categories = copySkills(matrix.getSkills());
+            if (categories.containsKey(category)) {
+                Map<String, Integer> tools = categories.get(category);
+                if (tools.containsKey(tool)) {
+                    tools.remove(tool);
+                    matrix.setSkills(categories);
+                }
+            }
+        }
+        repo.saveAll(matrices);
+        return "De tool " + tool + " is succesvol verwijderd uit de category " + category + " in alle matrices.";
     }
 
     public boolean checkIfCategoryExistsInBaseMatrix(String category) {

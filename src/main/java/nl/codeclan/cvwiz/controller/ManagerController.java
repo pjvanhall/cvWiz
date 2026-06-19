@@ -92,6 +92,13 @@ public class ManagerController {
         return skillMatrixService.addNewCategoryToMapCategories(category, techniek);
     }
 
+    @PostMapping("/nieuweLegeCategory")
+    public String addNewEmptyCategory(
+            @RequestParam @NotBlank @Size(max = 100) String category
+    ) {
+        return skillMatrixService.addNewEmptyCategoryToMapCategories(category);
+    }
+
     @PostMapping("/nieuweTechniek")
     public String addNewTool(
             @RequestParam @NotBlank @Size(max = 100) String category,
@@ -100,9 +107,46 @@ public class ManagerController {
         return skillMatrixService.addNewToolToMapCategories(category, techniek);
     }
 
+    @PostMapping("/bewerkCategory")
+    public String editCategory(
+            @RequestParam @NotBlank @Size(max = 100) String oldCategory,
+            @RequestParam @NotBlank @Size(max = 100) String newCategory
+    ) throws FileNotFoundException {
+        return skillMatrixService.editCategoryInMapCategories(oldCategory, newCategory);
+    }
+
+    @PostMapping("/bewerkTechniek")
+    public String editTool(
+            @RequestParam @NotBlank @Size(max = 100) String category,
+            @RequestParam @NotBlank @Size(max = 100) String oldTechniek,
+            @RequestParam @NotBlank @Size(max = 100) String newTechniek
+    ) throws FileNotFoundException {
+        return skillMatrixService.editToolInMapCategories(category, oldTechniek, newTechniek);
+    }
+
+    @DeleteMapping("/verwijderCategory")
+    public String deleteCategory(
+            @RequestParam @NotBlank @Size(max = 100) String category
+    ) throws FileNotFoundException {
+        return skillMatrixService.deleteCategoryFromMapCategories(category);
+    }
+
+    @DeleteMapping("/verwijderTechniek")
+    public String deleteTool(
+            @RequestParam @NotBlank @Size(max = 100) String category,
+            @RequestParam @NotBlank @Size(max = 100) String techniek
+    ) throws FileNotFoundException {
+        return skillMatrixService.deleteToolFromMapCategories(category, techniek);
+    }
+
     @GetMapping("/matrix")
     public TechniekMatrixDto getSkillMatrix(@RequestParam Long id) throws FileNotFoundException {
         return skillMatrixService.getSkillMatrix(id);
+    }
+
+    @GetMapping("/matrices")
+    public List<TechniekMatrixDto> getAllSkillMatrices() {
+        return skillMatrixService.getAllSkillMatrices();
     }
 
     @GetMapping("/curriculumVitae")
