@@ -67,7 +67,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex) {
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error.");
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error: " + ex.getMessage());
     }
 
 }

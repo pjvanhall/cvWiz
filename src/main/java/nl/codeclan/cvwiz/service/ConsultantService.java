@@ -3,6 +3,7 @@ package nl.codeclan.cvwiz.service;
 import nl.codeclan.cvwiz.dto.MedewerkerOnboardingResponseDto;
 import nl.codeclan.cvwiz.dto.CurriculumVitaeDto;
 import nl.codeclan.cvwiz.dto.MedewerkerDto;
+import nl.codeclan.cvwiz.dto.MedewerkerListDto;
 import nl.codeclan.cvwiz.mapper.CVMapper;
 import nl.codeclan.cvwiz.mapper.ConsultantMapper;
 import nl.codeclan.cvwiz.model.Consultant;
@@ -168,6 +169,13 @@ public class ConsultantService {
         } else {
             throw new FileNotFoundException("Geen consultant gevonden met deze gegevens.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<MedewerkerListDto> getAllConsultants() {
+        return consultantRepository.findAll().stream()
+                .map(ConsultantMapper::mapConsultantToListDto)
+                .toList();
     }
 
     public MedewerkerDto getConsultantByName(String firstname, String lastname) throws FileNotFoundException {

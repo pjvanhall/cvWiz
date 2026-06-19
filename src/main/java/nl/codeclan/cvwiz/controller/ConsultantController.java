@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import nl.codeclan.cvwiz.dto.CurriculumVitaeDto;
 import nl.codeclan.cvwiz.dto.MedewerkerDto;
+import nl.codeclan.cvwiz.dto.MedewerkerListDto;
 import nl.codeclan.cvwiz.service.ConsultantService;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.FileNotFoundException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/medewerkers")
@@ -35,6 +37,12 @@ public class ConsultantController {
             return consultantService.getConsultant(id);
         }
         return consultantService.getConsultantForUser(authentication.getName(), id);
+    }
+
+    @GetMapping("/alle")
+//    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
+    public List<MedewerkerListDto> getAllConsultants() {
+        return consultantService.getAllConsultants();
     }
 
     @PostMapping("/updateMedewerker")
