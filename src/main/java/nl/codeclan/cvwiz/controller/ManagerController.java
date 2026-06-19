@@ -172,4 +172,9 @@ public class ManagerController {
     public List<String> getUsers() {
         return managerService.getUsers();
     }
+
+    @GetMapping("/alleBeheerders")
+    public List<BeheerderDto> getAllManagers() {
+        return managerService.getAllManagers();
+    }
 }

@@ -36,7 +36,9 @@ public class ManagerService {
         dto.setId(String.valueOf(id));
         Manager manager = ManagerMapper.managerDtoToManager(dto);
         manager.setCustomUser(customUserService.createGeneratedCustomUser(createUsername(dto.getEmailAdres(), dto.getVoornaam(), dto.getAchternaam(), id), dto.getEmailAdres(), "ROLE_MANAGER"));
-        return ManagerMapper.managerToManagerDto(managerRepository.save(manager));
+        BeheerderDto saved = ManagerMapper.managerToManagerDto(managerRepository.save(manager));
+        populateHasCv(saved);
+        return saved;
     }
 
     private String createUsername(String email, String firstname, String lastname, UUID id) {
@@ -48,7 +50,9 @@ public class ManagerService {
 
     public BeheerderDto updateManager(BeheerderDto dto) throws EntityNotFoundException {
         if (managerRepository.existsById(UUID.fromString(dto.getId()))) {
-            return ManagerMapper.managerToManagerDto(managerRepository.save(ManagerMapper.managerDtoToManager(dto)));
+            BeheerderDto saved = ManagerMapper.managerToManagerDto(managerRepository.save(ManagerMapper.managerDtoToManager(dto)));
+            populateHasCv(saved);
+            return saved;
         } else {
             throw new EntityNotFoundException("Geen manager met id:" + dto.getId() + " gevonden.");
         }
@@ -56,7 +60,9 @@ public class ManagerService {
 
     public BeheerderDto getManager(UUID id) throws FileNotFoundException {
         if (managerRepository.existsById(id)) {
-            return ManagerMapper.managerToManagerDto(managerRepository.getReferenceById(id));
+            BeheerderDto dto = ManagerMapper.managerToManagerDto(managerRepository.getReferenceById(id));
+            populateHasCv(dto);
+            return dto;
         } else {
             throw new FileNotFoundException("Geen manager met dit id gevonden in de database.");
         }
@@ -97,5 +103,24 @@ public class ManagerService {
         }
         users.addAll(consultantService.getUserNames());
         return users;
+    }
+
+    public List<BeheerderDto> getAllManagers() {
+        List<BeheerderDto> beheerders = new ArrayList<>();
+        for (Manager manager : managerRepository.findAll()) {
+            BeheerderDto dto = ManagerMapper.managerToManagerDto(manager);
+            populateHasCv(dto);
+            beheerders.add(dto);
+        }
+        return beheerders;
+    }
+
+    private void populateHasCv(BeheerderDto dto) {
+        try {
+            MedewerkerDto consultant = consultantService.getConsultantByName(dto.getVoornaam(), dto.getAchternaam());
+            dto.setHasCv(consultant.getOrgineleCv() != null);
+        } catch (FileNotFoundException e) {
+            dto.setHasCv(false);
+        }
     }
 }

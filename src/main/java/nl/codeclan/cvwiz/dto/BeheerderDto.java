@@ -19,6 +19,7 @@ public class BeheerderDto {
     @Email
     @Size(max = 254)
     final String emailAdres;
+    boolean hasCv;
 
     public BeheerderDto(String voornaam, String id, String achternaam, String telefoon, String emailAdres) {
         this.voornaam = voornaam;
@@ -50,6 +51,14 @@ public class BeheerderDto {
 
     public String getEmailAdres() {
         return emailAdres;
+    }
+
+    public boolean isHasCv() {
+        return hasCv;
+    }
+
+    public void setHasCv(boolean hasCv) {
+        this.hasCv = hasCv;
     }
 
 }
