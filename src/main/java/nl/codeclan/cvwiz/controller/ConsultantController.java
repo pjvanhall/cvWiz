@@ -36,7 +36,14 @@ public class ConsultantController {
         if (authentication == null) {
             return consultantService.getConsultant(id);
         }
-        return consultantService.getConsultantForUser(authentication.getName(), id);
+        try {
+            return consultantService.getConsultantForUser(authentication.getName(), id);
+        } catch (FileNotFoundException e) {
+            if ("Geen consultant gevonden voor deze gebruiker.".equals(e.getMessage())) {
+                return consultantService.getConsultant(id);
+            }
+            throw e;
+        }
     }
 
     @GetMapping("/alle")
@@ -51,7 +58,14 @@ public class ConsultantController {
         if (authentication == null) {
             return consultantService.updateConsultant(dto);
         }
-        return consultantService.updateOwnConsultant(authentication.getName(), dto);
+        try {
+            return consultantService.updateOwnConsultant(authentication.getName(), dto);
+        } catch (FileNotFoundException e) {
+            if ("Geen consultant gevonden voor deze gebruiker.".equals(e.getMessage())) {
+                return consultantService.updateConsultant(dto);
+            }
+            throw e;
+        }
     }
 
     @PostMapping("/curriculumVitae/eersteLogin")

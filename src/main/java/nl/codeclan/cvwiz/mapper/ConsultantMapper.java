@@ -20,7 +20,7 @@ public class ConsultantMapper {
     }
 
     public static MedewerkerListDto mapConsultantToListDto(Consultant c) {
-        return new MedewerkerListDto(c.getConsultantId().toString(), c.getFirstname(), c.getLastname(), c.getTelephone(), c.getEmail());
+        return new MedewerkerListDto(c.getConsultantId().toString(), c.getFirstname(), c.getLastname(), c.getTelephone(), c.getEmail(), c.getOriginalCV() != null);
     }
 
 }

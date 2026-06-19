@@ -5,5 +5,6 @@ public record MedewerkerListDto(
     String voornaam,
     String achternaam,
     String telefoon,
-    String emailAdres
+    String emailAdres,
+    boolean hasCv
 ) {}
