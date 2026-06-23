@@ -7,6 +7,8 @@ import nl.codeclan.cvwiz.dto.CurriculumVitaeDto;
 import nl.codeclan.cvwiz.dto.MedewerkerDto;
 import nl.codeclan.cvwiz.dto.MedewerkerListDto;
 import nl.codeclan.cvwiz.service.ConsultantService;
+import nl.codeclan.cvwiz.service.SkillMatrixService;
+import nl.codeclan.cvwiz.dto.TechniekMatrixDto;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,9 +28,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 public class ConsultantController {
 
     private final ConsultantService consultantService;
+    private final SkillMatrixService skillMatrixService;
 
-    public ConsultantController(ConsultantService consultantService) {
+    public ConsultantController(ConsultantService consultantService, SkillMatrixService skillMatrixService) {
         this.consultantService = consultantService;
+        this.skillMatrixService = skillMatrixService;
     }
 
     @GetMapping("/medewerker")
@@ -79,5 +83,11 @@ public class ConsultantController {
     @PreAuthorize("hasAuthority('ROLE_CONSULTANT')")
     public MedewerkerDto getOwnProfile(Authentication authentication) throws FileNotFoundException {
         return consultantService.getOwnConsultant(authentication.getName());
+    }
+
+    @GetMapping("/basisMatrix")
+    @PreAuthorize("hasAnyAuthority('ROLE_CONSULTANT', 'ROLE_MANAGER')")
+    public TechniekMatrixDto getBaseMatrix() throws FileNotFoundException {
+        return skillMatrixService.getSkillMatrix(1L);
     }
 }
