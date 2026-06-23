@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.FileNotFoundException;
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/medewerkers")
@@ -31,7 +32,7 @@ public class ConsultantController {
     }
 
     @GetMapping("/medewerker")
-//    @PreAuthorize("hasAuthority('ROLE_CONSULTANT')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CONSULTANT', 'ROLE_MANAGER')")
     public MedewerkerDto getConsultant(@RequestParam @NotBlank @Size(max = 36) String id, Authentication authentication) throws FileNotFoundException {
         if (authentication == null) {
             return consultantService.getConsultant(id);
@@ -47,13 +48,13 @@ public class ConsultantController {
     }
 
     @GetMapping("/alle")
-//    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public List<MedewerkerListDto> getAllConsultants() {
         return consultantService.getAllConsultants();
     }
 
     @PostMapping("/updateMedewerker")
-//    @PreAuthorize("hasAuthority('ROLE_CONSULTANT')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CONSULTANT', 'ROLE_MANAGER')")
     public MedewerkerDto updateConsultant(@Valid @RequestBody MedewerkerDto dto, Authentication authentication) throws FileNotFoundException {
         if (authentication == null) {
             return consultantService.updateConsultant(dto);
@@ -69,8 +70,14 @@ public class ConsultantController {
     }
 
     @PostMapping("/curriculumVitae/eersteLogin")
-//    @PreAuthorize("hasAuthority('ROLE_CONSULTANT')")
+    @PreAuthorize("hasAuthority('ROLE_CONSULTANT')")
     public MedewerkerDto completeOneTimeCv(@Valid @RequestBody CurriculumVitaeDto cvDto, Authentication authentication) throws FileNotFoundException {
         return consultantService.completeOneTimeCv(authentication.getName(), cvDto);
+    }
+
+    @GetMapping("/mijzelf")
+    @PreAuthorize("hasAuthority('ROLE_CONSULTANT')")
+    public MedewerkerDto getOwnProfile(Authentication authentication) throws FileNotFoundException {
+        return consultantService.getOwnConsultant(authentication.getName());
     }
 }

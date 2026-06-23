@@ -14,10 +14,11 @@ import org.springframework.web.bind.annotation.*;
 import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/beheerders")
-// @PreAuthorize("hasAuthority('ROLE_MANAGER')")
+@PreAuthorize("hasAuthority('ROLE_MANAGER')")
 @Validated
 public class ManagerController {
 

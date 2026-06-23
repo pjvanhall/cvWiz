@@ -91,6 +91,10 @@ public class ConsultantService {
                 .orElseThrow(() -> new FileNotFoundException("Geen consultant gevonden voor deze gebruiker."));
     }
 
+    public MedewerkerDto getOwnConsultant(String username) throws FileNotFoundException {
+        return ConsultantMapper.mapConsultantToConsultantDto(getConsultantEntityForUser(username));
+    }
+
     private String createUsername(String email, String firstname, String lastname, UUID id) {
         if (email != null && !email.isBlank()) {
             return email;
