@@ -41,6 +41,7 @@ public class SecConfig implements WebMvcConfigurer {
                 })
                 .authorizeHttpRequests((auth) -> auth
                         .requestMatchers("/gebruikers/login").permitAll()
+                        .requestMatchers("/gebruikers/google-login").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);

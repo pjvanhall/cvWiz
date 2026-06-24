@@ -34,6 +34,15 @@ public class CustomUserService {
         }
     }
 
+    public CustomUser getUserByEmail(String email) throws UsernameNotFoundException {
+        Optional<CustomUser> customUser = customUserRepository.findByEmailIgnoreCase(email);
+        if (customUser.isEmpty()) {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        } else {
+            return customUser.get();
+        }
+    }
+
     public boolean existsByUsername(String username) {
         return customUserRepository.existsById(username);
     }
