@@ -59,9 +59,12 @@ public final class JwtUtil {
         return extractExpiration(jwt).before(new Date());
     }
 
-    public String generateToken(UserDetails userDetails, String username, String email) {
+    public String generateToken(UserDetails userDetails, String username, String email, String name) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", email);
+        if (name != null) {
+            claims.put("name", name);
+        }
         List<String> authorities = userDetails.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)

@@ -71,7 +71,7 @@ public class CustomUserController {
 
         CustomUser user = customUserService.getUserById(loginRequest.username());
         UserDetails userDetails = customUserDetailService.loadUserByUsername(loginRequest.username());
-        String token = jwtUtil.generateToken(userDetails, user.getUsername(), user.getEmail());
+        String token = jwtUtil.generateToken(userDetails, user.getUsername(), user.getEmail(), null);
 
         return new LoginResponseDto(token);
     }
@@ -90,10 +90,11 @@ public class CustomUserController {
             if (idToken != null) {
                 GoogleIdToken.Payload payload = idToken.getPayload();
                 String email = payload.getEmail();
+                String name = (String) payload.get("name");
                 
                 CustomUser user = customUserService.getUserByEmail(email);
                 UserDetails userDetails = customUserDetailService.loadUserByUsername(user.getUsername());
-                String token = jwtUtil.generateToken(userDetails, user.getUsername(), user.getEmail());
+                String token = jwtUtil.generateToken(userDetails, user.getUsername(), user.getEmail(), name);
                 
                 loginRateLimiter.recordSuccess(rateLimitKey);
                 return new LoginResponseDto(token);
