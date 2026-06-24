@@ -1,4 +1,6 @@
 package nl.codeclan.cvwiz.dto;
 
-public record LoginResponseDto(String token) {
+import java.util.List;
+
+public record LoginResponseDto(String username, String name, String email, List<String> roles) {
 }

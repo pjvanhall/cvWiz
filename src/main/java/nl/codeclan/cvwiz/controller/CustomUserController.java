@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.GrantedAuthority;
+import java.util.List;
+import java.util.stream.Collectors;
 import nl.codeclan.cvwiz.dto.GoogleLoginRequestDto;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -57,7 +62,7 @@ public class CustomUserController {
     }
 
     @PostMapping("/login")
-    public LoginResponseDto login(@Valid @RequestBody LoginRequestDto loginRequest, HttpServletRequest request) {
+    public LoginResponseDto login(@Valid @RequestBody LoginRequestDto loginRequest, HttpServletRequest request, HttpServletResponse response) {
         String rateLimitKey = loginRateLimiter.createKey(loginRequest.username(), request.getRemoteAddr());
         loginRateLimiter.checkAllowed(rateLimitKey);
 
@@ -73,11 +78,21 @@ public class CustomUserController {
         UserDetails userDetails = customUserDetailService.loadUserByUsername(loginRequest.username());
         String token = jwtUtil.generateToken(userDetails, user.getUsername(), user.getEmail(), null);
 
-        return new LoginResponseDto(token);
+        Cookie cookie = new Cookie("cvwiz_jwt", token);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(10 * 24 * 60 * 60); // 10 days
+        response.addCookie(cookie);
+
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
+        return new LoginResponseDto(user.getUsername(), user.getUsername(), user.getEmail(), roles);
     }
 
     @PostMapping("/google-login")
-    public LoginResponseDto googleLogin(@Valid @RequestBody GoogleLoginRequestDto loginRequest, HttpServletRequest request) {
+    public LoginResponseDto googleLogin(@Valid @RequestBody GoogleLoginRequestDto loginRequest, HttpServletRequest request, HttpServletResponse response) {
         String rateLimitKey = loginRateLimiter.createKey("google-" + request.getRemoteAddr(), request.getRemoteAddr());
         loginRateLimiter.checkAllowed(rateLimitKey);
 
@@ -96,8 +111,18 @@ public class CustomUserController {
                 UserDetails userDetails = customUserDetailService.loadUserByUsername(user.getUsername());
                 String token = jwtUtil.generateToken(userDetails, user.getUsername(), user.getEmail(), name);
                 
+                Cookie cookie = new Cookie("cvwiz_jwt", token);
+                cookie.setHttpOnly(true);
+                cookie.setPath("/");
+                cookie.setMaxAge(10 * 24 * 60 * 60); // 10 days
+                response.addCookie(cookie);
+
+                List<String> roles = userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList());
+
                 loginRateLimiter.recordSuccess(rateLimitKey);
-                return new LoginResponseDto(token);
+                return new LoginResponseDto(user.getUsername(), name, user.getEmail(), roles);
             } else {
                 loginRateLimiter.recordFailure(rateLimitKey);
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Google ID token.");
@@ -106,6 +131,15 @@ public class CustomUserController {
             loginRateLimiter.recordFailure(rateLimitKey);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Google login failed: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/logout")
+    public void logout(HttpServletResponse response) {
+        Cookie cookie = new Cookie("cvwiz_jwt", null);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
     }
 
 }
