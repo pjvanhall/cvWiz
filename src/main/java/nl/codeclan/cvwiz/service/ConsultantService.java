@@ -82,7 +82,6 @@ public class ConsultantService {
             throw new AccessDeniedException("Deze gebruiker mag deze consultant niet wijzigen.");
         }
         MedewerkerDto updatedConsultant = updateConsultant(dto);
-        customUserService.disableUser(username);
         return updatedConsultant;
     }
 
