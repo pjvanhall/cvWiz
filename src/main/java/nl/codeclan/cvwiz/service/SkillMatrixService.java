@@ -88,6 +88,10 @@ public class SkillMatrixService {
         if (matrix.isPresent()) {
             return SkillMatrixMapper.mapSkillMatrixToDto(matrix.get());
         } else {
+            if (id == 1L) {
+                createFirstSkillMatrix();
+                return SkillMatrixMapper.mapSkillMatrixToDto(repo.findById(1L).get());
+            }
             throw new FileNotFoundException("Geen skillmatrix met dit id gevonden!");
         }
     }
@@ -285,7 +289,10 @@ public class SkillMatrixService {
 
     private SkillMatrix getBaseSkillMatrix() throws FileNotFoundException {
         return repo.findById(1L)
-                .orElseThrow(() -> new FileNotFoundException("Er is geen basis matrix aanwezig in de database!"));
+                .orElseGet(() -> {
+                    createFirstSkillMatrix();
+                    return repo.findById(1L).get();
+                });
     }
 
     private TechniekMatrixDto addMissingBaseKeys(TechniekMatrixDto dto) throws FileNotFoundException {
