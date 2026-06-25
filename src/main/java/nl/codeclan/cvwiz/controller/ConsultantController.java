@@ -38,9 +38,7 @@ public class ConsultantController {
     @GetMapping("/medewerker")
     @PreAuthorize("hasAnyAuthority('ROLE_CONSULTANT', 'ROLE_MANAGER')")
     public MedewerkerDto getConsultant(@RequestParam @NotBlank @Size(max = 36) String id, Authentication authentication) throws FileNotFoundException {
-        if (authentication == null) {
-            return consultantService.getConsultant(id);
-        }
+
         try {
             return consultantService.getConsultantForUser(authentication.getName(), id);
         } catch (FileNotFoundException e) {
@@ -60,9 +58,7 @@ public class ConsultantController {
     @PostMapping("/updateMedewerker")
     @PreAuthorize("hasAnyAuthority('ROLE_CONSULTANT', 'ROLE_MANAGER')")
     public MedewerkerDto updateConsultant(@Valid @RequestBody MedewerkerDto dto, Authentication authentication) throws FileNotFoundException {
-        if (authentication == null) {
-            return consultantService.updateConsultant(dto);
-        }
+
         try {
             return consultantService.updateOwnConsultant(authentication.getName(), dto);
         } catch (FileNotFoundException e) {

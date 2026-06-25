@@ -10,12 +10,13 @@ Use JSON request bodies and set:
 
 ```text
 Content-Type: application/json
-Authorization: Bearer <jwt>
 ```
+
+Authentication is handled via an HTTP-only cookie (`cvwiz_jwt`) set automatically upon login. The backend will also accept an `Authorization: Bearer <jwt>` header if the cookie is not present.
 
 `POST /gebruikers/login` is public. In the fully secured configuration, manager endpoints require `ROLE_MANAGER` and consultant self-service endpoints require `ROLE_CONSULTANT`.
 
-Local development note: security is temporarily commented out while client authentication is being wired up. Most endpoints can be called without a bearer token in this mode. The one-time consultant CV endpoint still needs an authenticated consultant because it uses the current username to find the consultant record. See `README.md` for the restore checklist.
+
 
 ## Error Response
 
@@ -44,11 +45,16 @@ Request:
 }
 ```
 
-Response:
+Response (Cookie `cvwiz_jwt` is set automatically):
 
 ```json
 {
-  "token": "<jwt>"
+  "username": "piet.puk@codeclan.nl",
+  "name": "piet.puk@codeclan.nl",
+  "email": "piet.puk@codeclan.nl",
+  "roles": [
+    "ROLE_MANAGER"
+  ]
 }
 ```
 
